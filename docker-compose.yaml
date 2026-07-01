@@ -47,6 +47,12 @@ services:
     environment:
       APICURIO_STORAGE_KIND: "sql"
       APICURIO_STORAGE_SQL_KIND: "h2"
+      APICURIO_FEATURES_EXPERIMENTAL_ENABLED: "true"
+      APICURIO_ICEBERG_ENABLED: "true"
+      APICURIO_ICEBERG_WAREHOUSE: "s3://warehouse/"
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/apis/registry/v3/system/info"]
       interval: 5s
@@ -116,22 +122,6 @@ services:
       echo 'Warehouse bucket created'
       "
 
-  iceberg-rest:
-    image: tabulario/iceberg-rest:1.6.1
-    ports:
-      - "8181:8181"
-    environment:
-      CATALOG_WAREHOUSE: s3://warehouse/
-      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
-      CATALOG_S3_ENDPOINT: http://minio:9000
-      CATALOG_S3_PATH__STYLE__ACCESS: "true"
-      AWS_ACCESS_KEY_ID: admin
-      AWS_SECRET_ACCESS_KEY: password
-      AWS_REGION: us-east-1
-    depends_on:
-      minio-init:
-        condition: service_completed_successfully
-
   trino:
     container_name: lakehouse-trino
     image: trinodb/trino:439
@@ -140,4 +130,5 @@ services:
     volumes:
       - ./trino/catalog/iceberg.properties:/etc/trino/catalog/iceberg.properties
     depends_on:
-      - iceberg-rest
+      apicurio-registry:
+        condition: service_healthy

@@ -10,6 +10,7 @@ Batch ETL runs nightly. Your analysts query stale data. Your ML models train on 
 
 - **Debezium** captures row-level changes from PostgreSQL via CDC
 - **Kafka** streams the events with schemas enforced by **Apicurio Registry**
+- **Apicurio Registry** serves double duty: **schema registry** for Avro governance AND **Iceberg REST catalog** for table metadata — one component governing the entire pipeline
 - **Apache Iceberg** stores the data in an open table format, queryable within seconds via **Trino**
 - **Schema evolution** propagates automatically from database through registry to lakehouse — no manual DDL
 
@@ -23,17 +24,18 @@ graph LR
     Sink -->|Parquet files| Iceberg[Apache Iceberg\non MinIO]
     Iceberg --> Trino[Trino\nQuery Engine]
 
-    Debezium -.->|register schemas| Registry[Apicurio\nRegistry]
+    Debezium -.->|register schemas| Registry[Apicurio Registry\nSchema Registry +\nIceberg Catalog]
     Sink -.->|deserialize with\nregistered schemas| Registry
-    Registry -.->|auto schema\nevolution| Sink
+    Sink -.->|Iceberg REST\ncatalog API| Registry
+    Trino -.->|Iceberg REST\ncatalog API| Registry
 ```
 
 ### Pipeline Flow
 
 1. **Change Data Capture** — Debezium reads the PostgreSQL WAL and publishes row-level change events to Kafka topics
 2. **Schema Governance** — Avro schemas are automatically registered in Apicurio Registry, with compatibility rules preventing breaking changes
-3. **Lakehouse Ingestion** — The Iceberg sink connector deserializes events using registry schemas and writes Parquet files to MinIO
-4. **Real-Time Queries** — Trino queries Iceberg tables via the REST catalog — data is available within seconds of the database commit
+3. **Lakehouse Ingestion** — The Iceberg sink connector deserializes events using registry schemas and writes Parquet files to MinIO, with table metadata managed by Apicurio's Iceberg REST catalog API
+4. **Real-Time Queries** — Trino queries Iceberg tables via Apicurio Registry's Iceberg REST catalog — data is available within seconds of the database commit
 
 ## Prerequisites
 
@@ -43,7 +45,7 @@ graph LR
 ## Quick Start
 
 ```bash
-# Start all services (PostgreSQL, Kafka, Apicurio Registry, Kafka Connect, MinIO, Iceberg, Trino)
+# Start all services (PostgreSQL, Kafka, Apicurio Registry, Kafka Connect, MinIO, Trino)
 docker compose up -d --build
 
 # Wait for all services to be healthy
@@ -80,6 +82,7 @@ sleep 10
 | UI | URL | Description |
 |----|-----|-------------|
 | **Registry UI** | http://localhost:8888 | Browse Avro schemas registered by Debezium — see versions, compatibility rules |
+| **Iceberg Catalog** | http://localhost:8080/apis/iceberg/v1/config | Apicurio Registry's Iceberg REST catalog endpoint |
 | **MinIO Console** | http://localhost:9001 | Browse Iceberg Parquet files in the warehouse bucket (admin/password) |
 | **Trino** | http://localhost:8084 | SQL query interface for Iceberg tables |
 
@@ -123,7 +126,7 @@ Useful for ML training on historical features, auditing, and debugging productio
 | Source Database | [PostgreSQL 16](https://www.postgresql.org/) | Transactional database with logical replication |
 | Change Data Capture | [Debezium 2.7](https://debezium.io/) | Reads PostgreSQL WAL, publishes CDC events |
 | Event Streaming | [Apache Kafka](https://kafka.apache.org/) (KRaft) | Durable event log between source and sink |
-| Schema Registry | [Apicurio Registry 3.x](https://www.apicur.io/registry/) (CNCF sandbox) | Avro schema governance with compatibility rules |
+| Schema Registry + Iceberg Catalog | [Apicurio Registry 3.x](https://www.apicur.io/registry/) (CNCF sandbox) | Avro schema governance AND Iceberg REST catalog in one component |
 | Lakehouse Sink | [Iceberg Kafka Connect](https://github.com/tabular-io/iceberg-kafka-connect) | Writes Kafka events to Iceberg tables |
 | Table Format | [Apache Iceberg](https://iceberg.apache.org/) | Open table format with time travel and schema evolution |
 | Object Storage | [MinIO](https://min.io/) | S3-compatible storage for Iceberg data files |

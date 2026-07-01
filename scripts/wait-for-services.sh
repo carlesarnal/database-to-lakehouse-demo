@@ -19,7 +19,7 @@ wait_for "PostgreSQL"       "http://localhost:5432" 2>/dev/null || \
 wait_for "Kafka Connect"    "http://localhost:8083/connectors"
 wait_for "Apicurio Registry" "http://localhost:8080/apis/registry/v3/system/info"
 wait_for "MinIO"            "http://localhost:9000/minio/health/live"
-wait_for "Iceberg REST"     "http://localhost:8181/v1/config"
+wait_for "Iceberg Catalog"  "http://localhost:8080/apis/iceberg/v1/config"
 wait_for "Trino"            "http://localhost:8084/v1/info"
 
 echo ""

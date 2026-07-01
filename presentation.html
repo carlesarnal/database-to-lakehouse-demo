@@ -392,7 +392,7 @@
   </div>
 
   <!-- Slide 3: Architecture -->
-  <div class="slide" data-notes="Walk through the architecture left to right. Emphasize that Apicurio Registry is the contract layer — it's what makes schema evolution automatic.">
+  <div class="slide" data-notes="Walk through the architecture left to right. The key insight is Apicurio Registry serving DUAL roles: schema registry for Avro governance AND Iceberg REST catalog for table metadata. One component governing the entire pipeline.">
     <div class="content">
       <h3>Architecture</h3>
       <h2>The Real-Time Pipeline</h2>
@@ -439,11 +439,15 @@
         </div>
       </div>
       <div style="text-align: center; margin-top: 24px;">
-        <div class="arch-node highlight2" style="display: inline-block;">
+        <div class="arch-node highlight2" style="display: inline-block; border-width: 3px;">
           <div class="node-title">Apicurio Registry</div>
-          <div class="node-sub">Schema Governance (CNCF Sandbox)</div>
+          <div class="node-sub">Schema Registry + Iceberg REST Catalog (CNCF Sandbox)</div>
         </div>
-        <p style="margin-top: 12px; font-size: 1rem;">Schemas flow: Debezium <span class="accent4">&rarr;</span> Registry <span class="accent4">&rarr;</span> Iceberg Sink</p>
+        <p style="margin-top: 12px; font-size: 1rem;">
+          Schemas: Debezium <span class="accent4">&rarr;</span> Registry <span class="accent4">&rarr;</span> Iceberg Sink
+          &nbsp;&nbsp;|&nbsp;&nbsp;
+          Catalog: Sink + Trino <span class="accent4">&rarr;</span> Registry <code>/apis/iceberg/v1</code>
+        </p>
       </div>
     </div>
   </div>
@@ -495,29 +499,36 @@
   </div>
 
   <!-- Slide 7: Apicurio Registry -->
-  <div class="slide" data-notes="Apicurio Registry stores the Avro schemas. Debezium auto-registers them. The Iceberg sink reads them to deserialize events and evolve the table DDL.">
+  <div class="slide" data-notes="This is the key differentiator. Apicurio Registry serves DUAL roles: schema registry for Avro governance AND Iceberg REST catalog for table metadata. No separate catalog service needed. One component governs the entire pipeline.">
     <div class="content">
       <h3>Apicurio Registry</h3>
-      <h2>The Schema Contract Layer</h2>
-      <div class="cols cols-3" style="margin-top: 24px;">
-        <div class="card">
-          <p style="font-size: 1.1rem;"><span class="accent">Producer Side</span></p>
-          <p style="margin-top: 12px;">Debezium <strong>auto-registers</strong> Avro schemas when it detects source schema changes</p>
+      <h2>Schema Registry + Iceberg Catalog</h2>
+      <div class="cols cols-2" style="margin-top: 24px;">
+        <div class="card" style="border-color: var(--accent);">
+          <p style="font-size: 1.1rem;"><span class="accent">Schema Registry</span></p>
+          <ul style="margin-top: 12px;">
+            <li>Debezium <strong>auto-registers</strong> Avro schemas</li>
+            <li><strong>BACKWARD</strong> compatibility rules</li>
+            <li>Iceberg sink <strong>deserializes</strong> using registered schemas</li>
+          </ul>
         </div>
-        <div class="card">
-          <p style="font-size: 1.1rem;"><span class="accent2">Compatibility Rules</span></p>
-          <p style="margin-top: 12px;"><strong>BACKWARD</strong> compatibility prevents breaking changes from reaching consumers</p>
-        </div>
-        <div class="card">
-          <p style="font-size: 1.1rem;"><span class="accent3">Consumer Side</span></p>
-          <p style="margin-top: 12px;">Iceberg sink <strong>deserializes</strong> using registry schemas and evolves table DDL automatically</p>
+        <div class="card" style="border-color: var(--accent3);">
+          <p style="font-size: 1.1rem;"><span class="accent3">Iceberg REST Catalog</span></p>
+          <ul style="margin-top: 12px;">
+            <li>Implements the <strong>Iceberg REST Catalog API</strong></li>
+            <li>Manages table metadata, snapshots, partitions</li>
+            <li>Trino + Iceberg sink connect to <code>/apis/iceberg/v1</code></li>
+          </ul>
         </div>
       </div>
-      <div class="tag-row" style="justify-content: center; margin-top: 24px;">
+      <p style="text-align: center; margin-top: 24px; font-size: 1.15rem;">
+        <strong>One component</strong> governing the entire pipeline — no separate catalog service needed
+      </p>
+      <div class="tag-row" style="justify-content: center; margin-top: 16px;">
         <span class="badge badge-blue">CNCF Sandbox</span>
-        <span class="badge badge-green">Avro</span>
-        <span class="badge badge-purple">JSON Schema</span>
-        <span class="badge badge-orange">Protobuf</span>
+        <span class="badge badge-green">Avro / Protobuf / JSON Schema</span>
+        <span class="badge badge-purple">Iceberg REST Catalog</span>
+        <span class="badge badge-orange">OpenAPI / AsyncAPI</span>
       </div>
     </div>
   </div>
@@ -599,6 +610,7 @@
         <table>
           <tr><th>Service</th><th>URL</th></tr>
           <tr><td>Apicurio Registry UI</td><td><code>localhost:8888</code></td></tr>
+          <tr><td>Iceberg Catalog API</td><td><code>localhost:8080/apis/iceberg/v1</code></td></tr>
           <tr><td>MinIO Console</td><td><code>localhost:9001</code></td></tr>
           <tr><td>Trino</td><td><code>localhost:8084</code></td></tr>
           <tr><td>Kafka Connect</td><td><code>localhost:8083</code></td></tr>
@@ -693,7 +705,7 @@
         <div class="tech-item" style="border-color: var(--accent);">PostgreSQL 16</div>
         <div class="tech-item" style="border-color: var(--accent4);">Debezium 2.7</div>
         <div class="tech-item" style="border-color: var(--accent2);">Apache Kafka</div>
-        <div class="tech-item" style="border-color: var(--accent3);">Apicurio Registry 3.x</div>
+        <div class="tech-item" style="border-color: var(--accent3);">Apicurio Registry 3.x<br><small style="font-weight:400;color:var(--text-dim)">Schema Registry + Iceberg Catalog</small></div>
       </div>
       <div class="tech-row">
         <div class="tech-item" style="border-color: var(--accent);">Apache Iceberg</div>
