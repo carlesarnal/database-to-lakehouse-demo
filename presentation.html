@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Database to Lakehouse in Real-Time — JavaZone 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root, :root.dark {
+    --bg: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-code: #151820;
+    --text: #e4e7ef;
+    --text-dim: #8b90a0;
+    --accent: #4f8ff7;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --accent4: #fb923c;
+    --accent5: #f472b6;
+    --red: #ef4444;
+    --border: #2a2e3b;
+  }
+
+  :root.light {
+    --bg: #f5f6fa;
+    --bg-card: #ffffff;
+    --bg-code: #eef0f6;
+    --text: #1a1d27;
+    --text-dim: #5a5f72;
+    --accent: #2563eb;
+    --accent2: #7c3aed;
+    --accent3: #059669;
+    --accent4: #d97706;
+    --accent5: #db2777;
+    --red: #dc2626;
+    --border: #d1d5e0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  .deck { position: relative; width: 100vw; height: 100vh; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(40px);
+    transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s 0.45s;
+  }
+  .slide.active {
+    opacity: 1; visibility: visible;
+    transform: translateX(0);
+    transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s 0s;
+  }
+  .slide.leaving-left {
+    opacity: 0; visibility: hidden;
+    transform: translateX(-40px);
+    transition: opacity 0.45s ease, transform 0.45s ease, visibility 0s 0.45s;
+  }
+
+  h1 { font-size: 3.2rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.03em; }
+  h2 { font-size: 2.4rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 24px; }
+  h3 { font-size: 0.95rem; font-weight: 600; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+  p, li { font-size: 1.25rem; line-height: 1.65; color: var(--text-dim); }
+  li { margin-bottom: 10px; }
+  ul { list-style: none; padding-left: 0; }
+  ul li::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 14px; vertical-align: middle; }
+
+  .accent { color: var(--accent); }
+  .accent2 { color: var(--accent2); }
+  .accent3 { color: var(--accent3); }
+  .accent4 { color: var(--accent4); }
+  .accent5 { color: var(--accent5); }
+  strong { color: var(--text); font-weight: 600; }
+
+  code, .code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+    background: var(--bg-code);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--accent3);
+  }
+
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    max-width: 100%;
+    color: var(--text-dim);
+    text-align: left;
+  }
+  pre .kw { color: var(--accent2); }
+  pre .fn { color: var(--accent); }
+  pre .str { color: var(--accent3); }
+  pre .cmt { color: #555b6e; font-style: italic; }
+  pre .num { color: var(--accent4); }
+
+  .content { max-width: 1200px; width: 100%; text-align: left; }
+  .content.center { text-align: center; }
+
+  .cols { display: grid; gap: 32px; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge-blue { background: rgba(79,143,247,0.15); color: var(--accent); }
+  .badge-green { background: rgba(52,211,153,0.15); color: var(--accent3); }
+  .badge-purple { background: rgba(167,139,250,0.15); color: var(--accent2); }
+  .badge-orange { background: rgba(251,146,60,0.15); color: var(--accent4); }
+
+  .tag-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+  .arch-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: nowrap;
+    margin: 20px 0;
+  }
+  .arch-node {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+    text-align: center;
+    min-width: 130px;
+  }
+  .arch-node.highlight { border-color: var(--accent); box-shadow: 0 0 20px rgba(79,143,247,0.15); }
+  .arch-node.highlight2 { border-color: var(--accent2); box-shadow: 0 0 20px rgba(167,139,250,0.15); }
+  .arch-node.highlight3 { border-color: var(--accent3); box-shadow: 0 0 20px rgba(52,211,153,0.15); }
+  .arch-node.highlight4 { border-color: var(--accent4); box-shadow: 0 0 20px rgba(251,146,60,0.15); }
+  .arch-node .node-title { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+  .arch-node .node-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+  .arch-arrow {
+    font-size: 1.6rem;
+    color: var(--text-dim);
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  @keyframes flowPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  .flow-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: flowPulse 1.5s ease-in-out infinite;
+  }
+  .flow-dot:nth-child(2) { animation-delay: 0.3s; }
+  .flow-dot:nth-child(3) { animation-delay: 0.6s; }
+
+  .progress {
+    position: fixed; bottom: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  .slide-counter {
+    position: fixed; bottom: 16px; right: 28px;
+    font-size: 0.8rem; color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    z-index: 100;
+  }
+
+  .title-slide h1 {
+    font-size: 3.6rem;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 24px;
+  }
+  .title-slide .subtitle {
+    font-size: 1.4rem; color: var(--text-dim);
+    font-weight: 400; margin-bottom: 40px;
+  }
+  .title-meta {
+    font-size: 1rem; color: var(--text-dim);
+    display: flex; gap: 32px; align-items: center;
+  }
+  .title-meta span { display: flex; align-items: center; gap: 8px; }
+
+  .section-slide { text-align: center; }
+  .section-slide .section-num {
+    font-size: 5rem; font-weight: 800;
+    color: var(--accent);
+    opacity: 0.15;
+    line-height: 1;
+    margin-bottom: -10px;
+  }
+  .section-slide h2 { font-size: 2.8rem; margin-bottom: 12px; }
+  .section-slide p { font-size: 1.3rem; }
+
+  .takeaway-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .takeaway-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px;
+  }
+  .takeaway-card .num {
+    font-size: 2.4rem; font-weight: 800; line-height: 1;
+    margin-bottom: 12px;
+  }
+  .takeaway-card p { font-size: 1.1rem; }
+
+  .tech-row {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    justify-content: center; align-items: center;
+    margin: 24px 0;
+  }
+  .tech-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .cmd-row {
+    display: flex; align-items: center; gap: 10px; margin-top: 8px;
+  }
+  .cmd-row code {
+    flex: 1; font-size: 0.82rem; padding: 6px 12px;
+    border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .copy-btn {
+    background: rgba(79,143,247,0.15);
+    border: 1px solid rgba(79,143,247,0.3);
+    color: var(--accent);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.72rem; font-weight: 600;
+    padding: 5px 12px; border-radius: 6px;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .copy-btn:hover { background: rgba(79,143,247,0.3); border-color: var(--accent); }
+  .copy-btn.copied { background: rgba(52,211,153,0.2); border-color: var(--accent3); color: var(--accent3); }
+
+  .presenter-timer {
+    position: fixed; top: 16px; right: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem; color: var(--accent);
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 100;
+  }
+  .presenter-timer.visible { opacity: 1; }
+
+  .speaker-notes {
+    position: fixed; bottom: 40px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 28px;
+    font-size: 0.85rem; color: var(--text-dim);
+    max-width: 800px; opacity: 0;
+    transition: opacity 0.3s; z-index: 100;
+  }
+  .speaker-notes.visible { opacity: 1; }
+
+  .help-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; justify-content: center; align-items: center;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s, visibility 0s 0.3s;
+    z-index: 200;
+  }
+  .help-overlay.visible {
+    opacity: 1; visibility: visible;
+    transition: opacity 0.3s, visibility 0s 0s;
+  }
+  .help-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px 40px;
+    min-width: 360px;
+  }
+  .help-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; font-size: 0.9rem;
+  }
+  .help-key {
+    background: var(--bg-code); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+    margin-left: 8px;
+  }
+  .help-desc { color: var(--text-dim); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+  }
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 1.05rem;
+  }
+  th {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  td { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- Slide 1: Title -->
+  <div class="slide title-slide active" data-notes="Welcome! This talk shows how to replace batch ETL with a real-time streaming pipeline using 100% open-source tools.">
+    <div class="content center">
+      <h1>From Database to Lakehouse<br>in Real-Time</h1>
+      <p class="subtitle">CDC, Kafka, Apicurio Registry, and Apache Iceberg</p>
+      <div class="title-meta">
+        <span>Carles Arnal</span>
+        <span>Principal Software Engineer</span>
+        <span>JavaZone 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 2: The Problem -->
+  <div class="slide" data-notes="Most organizations still run nightly batch ETL. Analysts query stale data. ML models train on yesterday's features.">
+    <div class="content">
+      <h3>The Problem</h3>
+      <h2>Batch ETL Is Holding You Back</h2>
+      <div class="cols cols-2" style="margin-top: 32px;">
+        <div class="card">
+          <p style="font-size: 1.1rem;"><strong>Nightly ETL</strong></p>
+          <ul style="margin-top: 16px;">
+            <li style="color: var(--red);">Hours of latency</li>
+            <li style="color: var(--red);">Manual DDL synchronization</li>
+            <li style="color: var(--red);">Staging tables + schedulers</li>
+            <li style="color: var(--red);">Schema drift goes unnoticed</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color: var(--accent3);">
+          <p style="font-size: 1.1rem;"><strong>CDC + Streaming Lakehouse</strong></p>
+          <ul style="margin-top: 16px;">
+            <li style="color: var(--accent3);">Sub-second latency</li>
+            <li style="color: var(--accent3);">Automatic schema evolution</li>
+            <li style="color: var(--accent3);">Single streaming pipeline</li>
+            <li style="color: var(--accent3);">Schema governance built-in</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: Architecture -->
+  <div class="slide" data-notes="Walk through the architecture left to right. Emphasize that Apicurio Registry is the contract layer — it's what makes schema evolution automatic.">
+    <div class="content">
+      <h3>Architecture</h3>
+      <h2>The Real-Time Pipeline</h2>
+      <div class="arch-diagram" style="margin-top: 40px;">
+        <div class="arch-node highlight">
+          <div class="node-title">PostgreSQL</div>
+          <div class="node-sub">Source DB</div>
+        </div>
+        <div class="arch-arrow">
+          <span class="flow-dot"></span>
+          <span class="flow-dot"></span>
+          <span class="flow-dot"></span>
+        </div>
+        <div class="arch-node highlight4">
+          <div class="node-title">Debezium</div>
+          <div class="node-sub">CDC</div>
+        </div>
+        <div class="arch-arrow">
+          <span class="flow-dot"></span>
+          <span class="flow-dot"></span>
+          <span class="flow-dot"></span>
+        </div>
+        <div class="arch-node highlight2">
+          <div class="node-title">Kafka</div>
+          <div class="node-sub">Event Streaming</div>
+        </div>
+        <div class="arch-arrow">
+          <span class="flow-dot"></span>
+          <span class="flow-dot"></span>
+          <span class="flow-dot"></span>
+        </div>
+        <div class="arch-node highlight3">
+          <div class="node-title">Iceberg Sink</div>
+          <div class="node-sub">Connector</div>
+        </div>
+        <div class="arch-arrow">
+          <span class="flow-dot"></span>
+          <span class="flow-dot"></span>
+          <span class="flow-dot"></span>
+        </div>
+        <div class="arch-node highlight">
+          <div class="node-title">Apache Iceberg</div>
+          <div class="node-sub">on MinIO</div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 24px;">
+        <div class="arch-node highlight2" style="display: inline-block;">
+          <div class="node-title">Apicurio Registry</div>
+          <div class="node-sub">Schema Governance (CNCF Sandbox)</div>
+        </div>
+        <p style="margin-top: 12px; font-size: 1rem;">Schemas flow: Debezium <span class="accent4">&rarr;</span> Registry <span class="accent4">&rarr;</span> Iceberg Sink</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: Section — CDC -->
+  <div class="slide section-slide" data-notes="Now let's look at each component, starting with Change Data Capture.">
+    <div class="content center">
+      <div class="section-num">01</div>
+      <h2>Change Data Capture</h2>
+      <p>Reading the database write-ahead log</p>
+    </div>
+  </div>
+
+  <!-- Slide 5: How Debezium CDC Works -->
+  <div class="slide" data-notes="Debezium reads the PostgreSQL WAL. Every INSERT, UPDATE, DELETE becomes a Kafka event. No polling, no timestamps — it captures everything.">
+    <div class="content">
+      <h3>Debezium</h3>
+      <h2>WAL-Based Change Data Capture</h2>
+      <div class="cols cols-2" style="margin-top: 24px;">
+        <div>
+          <ul>
+            <li><strong>Reads the PostgreSQL WAL</strong> — no polling, no triggers</li>
+            <li><strong>Every row change</strong> becomes a Kafka event</li>
+            <li><strong>Initial snapshot</strong> captures existing data</li>
+            <li><strong>Schema changes detected</strong> automatically from WAL</li>
+          </ul>
+        </div>
+        <div>
+          <pre><span class="cmt">-- This INSERT...</span>
+<span class="kw">INSERT INTO</span> inventory.customers
+  <span class="kw">VALUES</span> (<span class="num">1005</span>, <span class="str">'Alice'</span>, <span class="str">'Smith'</span>,
+         <span class="str">'alice@example.com'</span>);
+
+<span class="cmt">-- ...becomes a Kafka event on topic</span>
+<span class="cmt">-- dbserver1.inventory.customers</span>
+<span class="cmt">-- with full Avro schema in Registry</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: Section — Schema Governance -->
+  <div class="slide section-slide" data-notes="The schema registry is what makes this pipeline safe for production.">
+    <div class="content center">
+      <div class="section-num">02</div>
+      <h2>Schema Governance</h2>
+      <p>Apicurio Registry as the contract layer</p>
+    </div>
+  </div>
+
+  <!-- Slide 7: Apicurio Registry -->
+  <div class="slide" data-notes="Apicurio Registry stores the Avro schemas. Debezium auto-registers them. The Iceberg sink reads them to deserialize events and evolve the table DDL.">
+    <div class="content">
+      <h3>Apicurio Registry</h3>
+      <h2>The Schema Contract Layer</h2>
+      <div class="cols cols-3" style="margin-top: 24px;">
+        <div class="card">
+          <p style="font-size: 1.1rem;"><span class="accent">Producer Side</span></p>
+          <p style="margin-top: 12px;">Debezium <strong>auto-registers</strong> Avro schemas when it detects source schema changes</p>
+        </div>
+        <div class="card">
+          <p style="font-size: 1.1rem;"><span class="accent2">Compatibility Rules</span></p>
+          <p style="margin-top: 12px;"><strong>BACKWARD</strong> compatibility prevents breaking changes from reaching consumers</p>
+        </div>
+        <div class="card">
+          <p style="font-size: 1.1rem;"><span class="accent3">Consumer Side</span></p>
+          <p style="margin-top: 12px;">Iceberg sink <strong>deserializes</strong> using registry schemas and evolves table DDL automatically</p>
+        </div>
+      </div>
+      <div class="tag-row" style="justify-content: center; margin-top: 24px;">
+        <span class="badge badge-blue">CNCF Sandbox</span>
+        <span class="badge badge-green">Avro</span>
+        <span class="badge badge-purple">JSON Schema</span>
+        <span class="badge badge-orange">Protobuf</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 8: Section — Lakehouse -->
+  <div class="slide section-slide" data-notes="Now let's see how the data lands in Iceberg and becomes queryable.">
+    <div class="content center">
+      <div class="section-num">03</div>
+      <h2>The Lakehouse</h2>
+      <p>Apache Iceberg on object storage</p>
+    </div>
+  </div>
+
+  <!-- Slide 9: Apache Iceberg -->
+  <div class="slide" data-notes="Iceberg is an open table format. Data lives as Parquet files on object storage (MinIO/S3). Trino queries it with full SQL.">
+    <div class="content">
+      <h3>Apache Iceberg</h3>
+      <h2>Open Table Format</h2>
+      <div class="cols cols-2" style="margin-top: 24px;">
+        <div>
+          <ul>
+            <li><strong>Parquet files</strong> on S3-compatible storage (MinIO)</li>
+            <li><strong>ACID transactions</strong> — concurrent reads and writes</li>
+            <li><strong>Schema evolution</strong> — add/rename/drop columns safely</li>
+            <li><strong>Time travel</strong> — query any historical snapshot</li>
+            <li><strong>Partition evolution</strong> — change partitioning without rewriting data</li>
+          </ul>
+        </div>
+        <div>
+          <pre><span class="cmt">-- Query real-time data via Trino</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.inventory.customers
+<span class="kw">ORDER BY</span> id;
+
+<span class="cmt">-- Time travel: query historical state</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.inventory.customers
+<span class="kw">FOR VERSION AS OF</span> <span class="num">123456789</span>;</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 10: Section — Live Demo -->
+  <div class="slide section-slide" data-notes="Time for the live demo. We'll show all three key scenarios: real-time CDC, schema evolution, and time travel.">
+    <div class="content center">
+      <div class="section-num">04</div>
+      <h2>Live Demo</h2>
+      <p>Real-time CDC, schema evolution, time travel</p>
+    </div>
+  </div>
+
+  <!-- Slide 11: Demo Setup -->
+  <div class="slide" data-notes="Show docker-compose up, then walk through each script step by step.">
+    <div class="content">
+      <h3>Demo</h3>
+      <h2>Running the Pipeline Locally</h2>
+      <div style="margin-top: 24px;">
+        <div class="cmd-row">
+          <code>docker compose up -d --build</code>
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+        </div>
+        <div class="cmd-row">
+          <code>./scripts/wait-for-services.sh</code>
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+        </div>
+        <div class="cmd-row">
+          <code>./scripts/02-deploy-connectors.sh</code>
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+        </div>
+        <div class="cmd-row">
+          <code>./scripts/03-insert-data.sh</code>
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+        </div>
+        <div class="cmd-row">
+          <code>./scripts/04-query-iceberg.sh</code>
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+        </div>
+      </div>
+      <div style="margin-top: 24px;">
+        <table>
+          <tr><th>Service</th><th>URL</th></tr>
+          <tr><td>Apicurio Registry UI</td><td><code>localhost:8888</code></td></tr>
+          <tr><td>MinIO Console</td><td><code>localhost:9001</code></td></tr>
+          <tr><td>Trino</td><td><code>localhost:8084</code></td></tr>
+          <tr><td>Kafka Connect</td><td><code>localhost:8083</code></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 12: Demo — Schema Evolution -->
+  <div class="slide" data-notes="This is the wow moment. ALTER TABLE in PostgreSQL, and the column appears in Iceberg automatically. No manual DDL, no broken pipelines.">
+    <div class="content">
+      <h3>Demo</h3>
+      <h2>Automatic Schema Evolution</h2>
+      <pre style="margin-top: 24px;">
+<span class="cmt">-- 1. Add a column in PostgreSQL</span>
+<span class="kw">ALTER TABLE</span> inventory.customers
+  <span class="kw">ADD COLUMN</span> phone <span class="fn">VARCHAR</span>(<span class="num">20</span>);
+
+<span class="cmt">-- 2. Debezium detects the WAL change</span>
+<span class="cmt">-- 3. Apicurio Registry registers new schema version</span>
+<span class="cmt">--    (BACKWARD compatible ✓)</span>
+<span class="cmt">-- 4. Iceberg sink evolves the table DDL automatically</span>
+
+<span class="cmt">-- 5. Query the new column in Trino</span>
+<span class="kw">SELECT</span> id, first_name, last_name, phone
+<span class="kw">FROM</span> iceberg.inventory.customers
+<span class="kw">WHERE</span> id = <span class="num">1005</span>;
+
+<span class="cmt">--  id  | first_name | last_name | phone</span>
+<span class="cmt">-- -----+------------+-----------+--------------</span>
+<span class="cmt">-- 1005 | Alice      | Smith     | +34-555-0001</span></pre>
+    </div>
+  </div>
+
+  <!-- Slide 13: Demo — Time Travel -->
+  <div class="slide" data-notes="Every CDC commit creates an Iceberg snapshot. You can query data as it was at any point in time. Hugely valuable for ML training and auditing.">
+    <div class="content">
+      <h3>Demo</h3>
+      <h2>Iceberg Time Travel</h2>
+      <pre style="margin-top: 24px;">
+<span class="cmt">-- List all snapshots</span>
+<span class="kw">SELECT</span> snapshot_id, committed_at
+<span class="kw">FROM</span> iceberg.inventory.<span class="str">"customers$snapshots"</span>
+<span class="kw">ORDER BY</span> committed_at;
+
+<span class="cmt">-- Query data before Alice was added</span>
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.inventory.customers
+<span class="kw">FOR VERSION AS OF</span> <span class="num">&lt;snapshot_id&gt;</span>;
+
+<span class="cmt">-- Only 4 original customers — Alice doesn't exist yet</span></pre>
+      <div class="cols cols-3" style="margin-top: 32px;">
+        <div class="card" style="text-align: center;">
+          <p style="font-size: 1.1rem;"><span class="accent">ML Training</span></p>
+          <p style="margin-top: 8px;">Train on historical features at any point in time</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <p style="font-size: 1.1rem;"><span class="accent2">Auditing</span></p>
+          <p style="margin-top: 8px;">Regulatory compliance with full change history</p>
+        </div>
+        <div class="card" style="text-align: center;">
+          <p style="font-size: 1.1rem;"><span class="accent3">Debugging</span></p>
+          <p style="margin-top: 8px;">Reproduce production state at any timestamp</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 14: When to Use This -->
+  <div class="slide" data-notes="Be honest about when this is overkill. Low-volume, infrequently-changing data doesn't need real-time CDC.">
+    <div class="content">
+      <h3>Guidance</h3>
+      <h2>When Does This Replace Batch ETL?</h2>
+      <div style="margin-top: 24px;">
+        <table>
+          <tr><th>Use CDC + Iceberg</th><th>Keep Batch ETL</th></tr>
+          <tr><td>Analysts need fresh data (minutes, not hours)</td><td>Daily aggregation reports are sufficient</td></tr>
+          <tr><td>ML models need real-time features</td><td>Low-volume, infrequently-changing data</td></tr>
+          <tr><td>Schema changes happen frequently</td><td>Schema is stable and rarely evolves</td></tr>
+          <tr><td>Multiple consumers need the same CDC stream</td><td>Single-use data extracts</td></tr>
+          <tr><td>You need full change history (audit, compliance)</td><td>Only the latest state matters</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 15: Technology Stack -->
+  <div class="slide" data-notes="Everything is open source. No vendor lock-in. You can run this on any cloud or on-premises.">
+    <div class="content">
+      <h3>Technology</h3>
+      <h2>100% Open Source Stack</h2>
+      <div class="tech-row" style="margin-top: 32px;">
+        <div class="tech-item" style="border-color: var(--accent);">PostgreSQL 16</div>
+        <div class="tech-item" style="border-color: var(--accent4);">Debezium 2.7</div>
+        <div class="tech-item" style="border-color: var(--accent2);">Apache Kafka</div>
+        <div class="tech-item" style="border-color: var(--accent3);">Apicurio Registry 3.x</div>
+      </div>
+      <div class="tech-row">
+        <div class="tech-item" style="border-color: var(--accent);">Apache Iceberg</div>
+        <div class="tech-item" style="border-color: var(--accent5);">MinIO</div>
+        <div class="tech-item" style="border-color: var(--accent2);">Trino 439</div>
+      </div>
+      <div style="text-align: center; margin-top: 32px;">
+        <span class="badge badge-blue">CNCF Sandbox</span>
+        <span style="margin-left: 8px; font-size: 1rem; color: var(--text-dim);">Apicurio Registry</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 16: Takeaways -->
+  <div class="slide" data-notes="Summarize the four key takeaways. Point people to the GitHub repo for the full demo.">
+    <div class="content">
+      <h3>Summary</h3>
+      <h2>Key Takeaways</h2>
+      <div class="takeaway-grid" style="margin-top: 24px;">
+        <div class="takeaway-card">
+          <div class="num accent">01</div>
+          <p><strong>Sub-second latency</strong> from database commit to queryable lakehouse — no batch scheduler needed</p>
+        </div>
+        <div class="takeaway-card">
+          <div class="num accent2">02</div>
+          <p><strong>Schema evolution flows automatically</strong> from PostgreSQL through Apicurio Registry to Iceberg</p>
+        </div>
+        <div class="takeaway-card">
+          <div class="num accent3">03</div>
+          <p><strong>Apicurio Registry is the contract layer</strong> — compatibility rules prevent breaking changes at every stage</p>
+        </div>
+        <div class="takeaway-card">
+          <div class="num accent4">04</div>
+          <p><strong>Time travel for free</strong> — every CDC event creates an Iceberg snapshot you can query historically</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 17: Thank You -->
+  <div class="slide title-slide" data-notes="Thank the audience. Point to the GitHub repo. Open for questions.">
+    <div class="content center">
+      <h1>Thank You!</h1>
+      <p class="subtitle">Questions?</p>
+      <div style="margin-top: 40px;">
+        <div class="cmd-row" style="justify-content: center;">
+          <code>github.com/carlesarnal/database-to-lakehouse-demo</code>
+          <button class="copy-btn" onclick="copyCmd(this)">Copy</button>
+        </div>
+      </div>
+      <div class="title-meta" style="margin-top: 32px; justify-content: center;">
+        <span>Carles Arnal</span>
+        <span>@carabornal</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Progress bar -->
+<div class="progress" id="progress"></div>
+
+<!-- Slide counter -->
+<div class="slide-counter" id="counter"></div>
+
+<!-- Presenter timer -->
+<div class="presenter-timer" id="timer">00:00</div>
+
+<!-- Speaker notes -->
+<div class="speaker-notes" id="notes"></div>
+
+<!-- Help overlay -->
+<div class="help-overlay" id="help">
+  <div class="help-box">
+    <h3>Keyboard Shortcuts</h3>
+    <div class="help-row"><span class="help-desc">Next slide</span><span class="help-key">&rarr;</span> <span class="help-key">Space</span></div>
+    <div class="help-row"><span class="help-desc">Previous slide</span><span class="help-key">&larr;</span></div>
+    <div class="help-row"><span class="help-desc">First slide</span><span class="help-key">Home</span></div>
+    <div class="help-row"><span class="help-desc">Last slide</span><span class="help-key">End</span></div>
+    <div class="help-row"><span class="help-desc">Toggle speaker notes</span><span class="help-key">N</span></div>
+    <div class="help-row"><span class="help-desc">Toggle timer</span><span class="help-key">T</span></div>
+    <div class="help-row"><span class="help-desc">Toggle theme</span><span class="help-key">D</span></div>
+    <div class="help-row"><span class="help-desc">This help</span><span class="help-key">?</span></div>
+  </div>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const progressBar = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const notesEl = document.getElementById('notes');
+  const helpEl = document.getElementById('help');
+  const timerEl = document.getElementById('timer');
+  let current = 0;
+  let timerStart = null;
+  let timerInterval = null;
+
+  function updateUI() {
+    const pct = ((current + 1) / slides.length) * 100;
+    progressBar.style.width = pct + '%';
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    const notes = slides[current].getAttribute('data-notes');
+    notesEl.innerHTML = notes ? notes : '';
+  }
+
+  function goTo(n, direction) {
+    if (n < 0 || n >= slides.length || n === current) return;
+    const prev = slides[current];
+    const next = slides[n];
+    prev.classList.remove('active');
+    prev.classList.add(direction === 'forward' ? 'leaving-left' : 'leaving-right');
+    setTimeout(() => { prev.classList.remove('leaving-left', 'leaving-right'); }, 500);
+    next.classList.add('active');
+    current = n;
+    updateUI();
+  }
+
+  function next() { goTo(current + 1, 'forward'); }
+  function prev() { goTo(current - 1, 'backward'); }
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('light');
+  }
+
+  function toggleTimer() {
+    if (timerStart === null) {
+      timerStart = Date.now();
+      timerEl.classList.add('visible');
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - timerStart) / 1000);
+        const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        const s = String(elapsed % 60).padStart(2, '0');
+        timerEl.textContent = m + ':' + s;
+      }, 1000);
+    } else {
+      clearInterval(timerInterval);
+      timerStart = null;
+      timerEl.classList.remove('visible');
+    }
+  }
+
+  function copyCmd(btn) {
+    const code = btn.parentElement.querySelector('code');
+    navigator.clipboard.writeText(code.textContent);
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+    if (e.key === 'Home') { e.preventDefault(); goTo(0, 'backward'); }
+    if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1, 'forward'); }
+    if (e.key === 'n' || e.key === 'N') { notesEl.classList.toggle('visible'); }
+    if (e.key === 't' || e.key === 'T') { toggleTimer(); }
+    if (e.key === 'd' || e.key === 'D') { toggleTheme(); }
+    if (e.key === '?') { helpEl.classList.toggle('visible'); }
+    if (e.key === 'Escape') { helpEl.classList.remove('visible'); }
+  });
+
+  updateUI();
+</script>
+</body>
+</html>

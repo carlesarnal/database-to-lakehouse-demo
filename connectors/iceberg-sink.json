@@ -1,0 +1,24 @@
+{
+  "name": "iceberg-sink",
+  "config": {
+    "connector.class": "io.tabular.iceberg.connect.IcebergSinkConnector",
+    "tasks.max": "1",
+    "topics": "dbserver1.inventory.customers,dbserver1.inventory.orders",
+    "iceberg.tables": "lakehouse.inventory.customers,lakehouse.inventory.orders",
+    "iceberg.tables.auto-create-enabled": "true",
+    "iceberg.tables.evolve-schema-enabled": "true",
+    "iceberg.catalog.type": "rest",
+    "iceberg.catalog.uri": "http://iceberg-rest:8181",
+    "iceberg.catalog.s3.endpoint": "http://minio:9000",
+    "iceberg.catalog.s3.access-key-id": "admin",
+    "iceberg.catalog.s3.secret-access-key": "password",
+    "iceberg.catalog.warehouse": "s3://warehouse/",
+    "iceberg.catalog.s3.path-style-access": "true",
+    "key.converter": "io.apicurio.registry.utils.converter.AvroConverter",
+    "key.converter.apicurio.registry.url": "http://apicurio-registry:8080/apis/registry/v3",
+    "key.converter.apicurio.registry.find-latest": "true",
+    "value.converter": "io.apicurio.registry.utils.converter.AvroConverter",
+    "value.converter.apicurio.registry.url": "http://apicurio-registry:8080/apis/registry/v3",
+    "value.converter.apicurio.registry.find-latest": "true"
+  }
+}

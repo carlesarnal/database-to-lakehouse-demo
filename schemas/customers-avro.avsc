@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "Customer",
+  "namespace": "inventory",
+  "fields": [
+    {"name": "id", "type": "int"},
+    {"name": "first_name", "type": "string"},
+    {"name": "last_name", "type": "string"},
+    {"name": "email", "type": "string"}
+  ]
+}
