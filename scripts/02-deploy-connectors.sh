@@ -21,7 +21,7 @@ sleep 10
 echo "--- Deploying Iceberg sink connector ---"
 curl -sf -X POST http://localhost:8083/connectors \
   -H "Content-Type: application/json" \
-  -d @"$PROJECT_DIR/connectors/iceberg-sink.json" | jq .
+  -d @"$PROJECT_DIR/connectors/iceberg-sink-customers.json" | jq .
 echo ""
 
 echo "--- Connector status ---"
@@ -37,4 +37,4 @@ echo ""
 
 echo "Connectors deployed. CDC events are flowing."
 echo "  Debezium: PostgreSQL → Kafka (Avro, schemas in Apicurio Registry)"
-echo "  Iceberg:  Kafka → Iceberg tables (via REST catalog on MinIO)"
+echo "  Iceberg:  Kafka → Iceberg tables (via Apicurio Iceberg REST catalog)"

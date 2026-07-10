@@ -1,13 +1,14 @@
 {
-  "name": "iceberg-sink",
+  "name": "iceberg-sink-orders",
   "config": {
     "connector.class": "io.tabular.iceberg.connect.IcebergSinkConnector",
     "tasks.max": "1",
-    "topics": "dbserver1.inventory.customers,dbserver1.inventory.orders",
-    "iceberg.tables": "lakehouse.inventory.customers,lakehouse.inventory.orders",
+    "topics": "dbserver1.inventory.orders",
+    "iceberg.tables": "lakehouse.inventory.orders",
     "iceberg.tables.auto-create-enabled": "true",
     "iceberg.tables.evolve-schema-enabled": "true",
-    "iceberg.control.commit.interval-ms": "10000",
+    "iceberg.control.commit.interval-ms": "30000",
+    "iceberg.control.topic": "control-iceberg-orders",
     "iceberg.catalog.type": "rest",
     "iceberg.catalog.uri": "http://apicurio-registry:8080/apis/iceberg",
     "iceberg.catalog.prefix": "default",

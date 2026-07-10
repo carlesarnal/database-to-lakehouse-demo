@@ -3,8 +3,8 @@
   "config": {
     "connector.class": "io.tabular.iceberg.connect.IcebergSinkConnector",
     "tasks.max": "1",
-    "topics": "dbserver1.inventory.customers,dbserver1.inventory.orders",
-    "iceberg.tables": "lakehouse.inventory.customers,lakehouse.inventory.orders",
+    "topics": "dbserver1.inventory.customers",
+    "iceberg.tables": "lakehouse.inventory.customers",
     "iceberg.tables.auto-create-enabled": "true",
     "iceberg.tables.evolve-schema-enabled": "true",
     "iceberg.control.commit.interval-ms": "10000",
