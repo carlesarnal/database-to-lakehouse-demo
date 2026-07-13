@@ -2,7 +2,7 @@
 
 A live demonstration of a **real-time CDC-to-lakehouse pipeline** using open-source tools: [Debezium](https://debezium.io/), [Apache Kafka](https://kafka.apache.org/), [Apicurio Registry](https://www.apicur.io/registry/) (CNCF sandbox), and [Apache Iceberg](https://iceberg.apache.org/).
 
-Presented at **JavaZone 2026**.
+Presented at **JavaZone 2026**, **Community Over Code Asia 2026**.
 
 ## Overview
 
