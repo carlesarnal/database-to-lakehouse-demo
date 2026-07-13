@@ -88,7 +88,7 @@ services:
       retries: 10
 
   apicurio-registry:
-    image: quay.io/apicurio/apicurio-registry:3.3.0
+    image: localhost/apicurio-registry:local
     ports:
       - "8080:8080"
     environment:
@@ -96,7 +96,7 @@ services:
       APICURIO_STORAGE_SQL_KIND: "h2"
       APICURIO_FEATURES_EXPERIMENTAL_ENABLED: "true"
       APICURIO_ICEBERG_ENABLED: "true"
-      APICURIO_ICEBERG_WAREHOUSE: "s3://warehouse/"
+      APICURIO_ICEBERG_WAREHOUSE: "s3://warehouse"
     depends_on:
       minio-init:
         condition: service_completed_successfully
