@@ -111,10 +111,10 @@ Every CDC commit creates an Iceberg snapshot. You can query historical data:
 
 ```sql
 -- See all snapshots
-SELECT snapshot_id, committed_at FROM iceberg.inventory."customers$snapshots";
+SELECT snapshot_id, committed_at FROM iceberg.lakehouse."customers$snapshots";
 
 -- Query data as it was before a change
-SELECT * FROM iceberg.inventory.customers FOR VERSION AS OF <snapshot_id>;
+SELECT * FROM iceberg.lakehouse.customers FOR VERSION AS OF <snapshot_id>;
 ```
 
 Useful for ML training on historical features, auditing, and debugging production issues.
@@ -124,8 +124,8 @@ Useful for ML training on historical features, auditing, and debugging productio
 | Component | Technology | Role |
 |-----------|------------|------|
 | Source Database | [PostgreSQL 16](https://www.postgresql.org/) | Transactional database with logical replication |
-| Change Data Capture | [Debezium 2.7](https://debezium.io/) | Reads PostgreSQL WAL, publishes CDC events |
-| Event Streaming | [Apache Kafka](https://kafka.apache.org/) (KRaft) | Durable event log between source and sink |
+| Change Data Capture | [Debezium 3.5](https://debezium.io/) | Reads PostgreSQL WAL, publishes CDC events |
+| Event Streaming | [Apache Kafka](https://kafka.apache.org/) (KRaft, 3-node cluster) | Durable event log between source and sink |
 | Schema Registry + Iceberg Catalog | [Apicurio Registry 3.x](https://www.apicur.io/registry/) (CNCF sandbox) | Avro schema governance AND Iceberg REST catalog in one component |
 | Lakehouse Sink | [Iceberg Kafka Connect](https://github.com/tabular-io/iceberg-kafka-connect) | Writes Kafka events to Iceberg tables |
 | Table Format | [Apache Iceberg](https://iceberg.apache.org/) | Open table format with time travel and schema evolution |

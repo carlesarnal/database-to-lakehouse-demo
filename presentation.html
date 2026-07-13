@@ -357,8 +357,7 @@
       <p class="subtitle">CDC, Kafka, Apicurio Registry, and Apache Iceberg</p>
       <div class="title-meta">
         <span>Carles Arnal</span>
-        <span>Principal Software Engineer</span>
-        <span>2026</span>
+        <span>Principal Software Engineer, Red Hat</span>
       </div>
     </div>
   </div>
@@ -559,11 +558,11 @@
         </div>
         <div>
           <pre><span class="cmt">-- Query real-time data via Trino</span>
-<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.inventory.customers
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.lakehouse.customers
 <span class="kw">ORDER BY</span> id;
 
 <span class="cmt">-- Time travel: query historical state</span>
-<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.inventory.customers
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.lakehouse.customers
 <span class="kw">FOR VERSION AS OF</span> <span class="num">123456789</span>;</pre>
         </div>
       </div>
@@ -636,7 +635,7 @@
 
 <span class="cmt">-- 5. Query the new column in Trino</span>
 <span class="kw">SELECT</span> id, first_name, last_name, phone
-<span class="kw">FROM</span> iceberg.inventory.customers
+<span class="kw">FROM</span> iceberg.lakehouse.customers
 <span class="kw">WHERE</span> id = <span class="num">1005</span>;
 
 <span class="cmt">--  id  | first_name | last_name | phone</span>
@@ -657,7 +656,7 @@
 <span class="kw">ORDER BY</span> committed_at;
 
 <span class="cmt">-- Query data before Alice was added</span>
-<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.inventory.customers
+<span class="kw">SELECT</span> * <span class="kw">FROM</span> iceberg.lakehouse.customers
 <span class="kw">FOR VERSION AS OF</span> <span class="num">&lt;snapshot_id&gt;</span>;
 
 <span class="cmt">-- Only 4 original customers — Alice doesn't exist yet</span></pre>
@@ -703,7 +702,7 @@
       <h2>100% Open Source Stack</h2>
       <div class="tech-row" style="margin-top: 32px;">
         <div class="tech-item" style="border-color: var(--accent);">PostgreSQL 16</div>
-        <div class="tech-item" style="border-color: var(--accent4);">Debezium 2.7</div>
+        <div class="tech-item" style="border-color: var(--accent4);">Debezium 3.5</div>
         <div class="tech-item" style="border-color: var(--accent2);">Apache Kafka</div>
         <div class="tech-item" style="border-color: var(--accent3);">Apicurio Registry 3.x<br><small style="font-weight:400;color:var(--text-dim)">Schema Registry + Iceberg Catalog</small></div>
       </div>
@@ -735,7 +734,7 @@
         </div>
         <div class="takeaway-card">
           <div class="num accent3">03</div>
-          <p><strong>Apicurio Registry is the contract layer</strong> — compatibility rules prevent breaking changes at every stage</p>
+          <p><strong>Apicurio Registry governs everything</strong> — schema registry AND Iceberg catalog in one component, no separate catalog needed</p>
         </div>
         <div class="takeaway-card">
           <div class="num accent4">04</div>
