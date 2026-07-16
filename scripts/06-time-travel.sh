@@ -8,22 +8,22 @@ echo ""
 
 echo "--- All snapshots ---"
 docker exec -i lakehouse-trino trino --execute \
-  "SELECT snapshot_id, committed_at, operation, summary FROM iceberg.inventory.\"customers\$snapshots\" ORDER BY committed_at;"
+  "SELECT snapshot_id, committed_at, operation, summary FROM iceberg.lakehouse.\"customers\$snapshots\" ORDER BY committed_at;"
 echo ""
 
 FIRST_SNAPSHOT=$(docker exec -i lakehouse-trino trino --output-format CSV --execute \
-  "SELECT snapshot_id FROM iceberg.inventory.\"customers\$snapshots\" ORDER BY committed_at LIMIT 1;" 2>/dev/null | tr -d '"')
+  "SELECT snapshot_id FROM iceberg.lakehouse.\"customers\$snapshots\" ORDER BY committed_at LIMIT 1;" 2>/dev/null | tr -d '"')
 
 if [ -n "$FIRST_SNAPSHOT" ]; then
   echo "--- Querying first snapshot ($FIRST_SNAPSHOT) — before Alice was added ---"
   docker exec -i lakehouse-trino trino --execute \
-    "SELECT * FROM iceberg.inventory.customers FOR VERSION AS OF $FIRST_SNAPSHOT;"
+    "SELECT * FROM iceberg.lakehouse.customers FOR VERSION AS OF $FIRST_SNAPSHOT;"
   echo ""
 fi
 
 echo "--- Current state ---"
 docker exec -i lakehouse-trino trino --execute \
-  "SELECT * FROM iceberg.inventory.customers ORDER BY id;"
+  "SELECT * FROM iceberg.lakehouse.customers ORDER BY id;"
 echo ""
 
 echo "Every CDC event creates an Iceberg snapshot."

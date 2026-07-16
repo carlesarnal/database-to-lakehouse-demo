@@ -8,7 +8,7 @@ echo ""
 
 echo "--- Current Iceberg schema ---"
 docker exec -i lakehouse-trino trino --execute \
-  "DESCRIBE iceberg.inventory.customers;"
+  "DESCRIBE iceberg.lakehouse.customers;"
 echo ""
 
 echo "--- Adding 'phone' column in PostgreSQL ---"
@@ -32,12 +32,12 @@ echo ""
 
 echo "--- Evolved Iceberg schema ---"
 docker exec -i lakehouse-trino trino --execute \
-  "DESCRIBE iceberg.inventory.customers;"
+  "DESCRIBE iceberg.lakehouse.customers;"
 echo ""
 
 echo "--- Query the new column ---"
 docker exec -i lakehouse-trino trino --execute \
-  "SELECT id, first_name, last_name, phone FROM iceberg.inventory.customers WHERE id = 1005;"
+  "SELECT id, first_name, last_name, phone FROM iceberg.lakehouse.customers WHERE id = 1005;"
 echo ""
 
 echo "What just happened automatically:"

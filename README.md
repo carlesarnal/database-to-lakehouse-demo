@@ -2,7 +2,7 @@
 
 A live demonstration of a **real-time CDC-to-lakehouse pipeline** using open-source tools: [Debezium](https://debezium.io/), [Apache Kafka](https://kafka.apache.org/), [Apicurio Registry](https://www.apicur.io/registry/) (CNCF sandbox), and [Apache Iceberg](https://iceberg.apache.org/).
 
-Presented at **JavaZone 2026**, **Community Over Code Asia 2026**.
+Presented at **JavaZone 2026**.
 
 ## Overview
 
@@ -56,7 +56,7 @@ docker compose up -d --build
 
 # Insert data and query it in Iceberg
 ./scripts/03-insert-data.sh
-sleep 10
+sleep 60
 ./scripts/04-query-iceberg.sh
 
 # Or run the full interactive demo end-to-end
@@ -68,7 +68,7 @@ sleep 10
 | Script | Purpose |
 |--------|---------|
 | `scripts/01-start-pipeline.sh` | Start all Docker Compose services and wait for health |
-| `scripts/02-deploy-connectors.sh` | Register Debezium source + Iceberg sink connectors via Kafka Connect REST API |
+| `scripts/02-deploy-connectors.sh` | Register Debezium source + Iceberg sink connectors (customers + orders) via Kafka Connect REST API |
 | `scripts/03-insert-data.sh` | Insert a new customer and order into PostgreSQL |
 | `scripts/04-query-iceberg.sh` | Query Iceberg tables via Trino — see CDC data arrive in real-time |
 | `scripts/05-schema-evolution.sh` | Add a column in PostgreSQL, watch it propagate automatically through Registry to Iceberg |

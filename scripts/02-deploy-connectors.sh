@@ -18,17 +18,25 @@ echo ""
 echo "Waiting for Debezium to capture initial snapshot..."
 sleep 10
 
-echo "--- Deploying Iceberg sink connector ---"
+echo "--- Deploying Iceberg sink connector (customers) ---"
 curl -sf -X POST http://localhost:8083/connectors \
   -H "Content-Type: application/json" \
   -d @"$PROJECT_DIR/connectors/iceberg-sink-customers.json" | jq .
 echo ""
 
+echo "--- Deploying Iceberg sink connector (orders) ---"
+curl -sf -X POST http://localhost:8083/connectors \
+  -H "Content-Type: application/json" \
+  -d @"$PROJECT_DIR/connectors/iceberg-sink-orders.json" | jq .
+echo ""
+
 echo "--- Connector status ---"
 echo "Source:"
 curl -sf http://localhost:8083/connectors/inventory-source/status | jq '.connector.state'
-echo "Sink:"
+echo "Sink (customers):"
 curl -sf http://localhost:8083/connectors/iceberg-sink/status | jq '.connector.state'
+echo "Sink (orders):"
+curl -sf http://localhost:8083/connectors/iceberg-sink-orders/status | jq '.connector.state'
 echo ""
 
 echo "--- Schemas registered in Apicurio Registry ---"

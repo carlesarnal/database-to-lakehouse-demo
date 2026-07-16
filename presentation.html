@@ -652,7 +652,7 @@
       <pre style="margin-top: 24px;">
 <span class="cmt">-- List all snapshots</span>
 <span class="kw">SELECT</span> snapshot_id, committed_at
-<span class="kw">FROM</span> iceberg.inventory.<span class="str">"customers$snapshots"</span>
+<span class="kw">FROM</span> iceberg.lakehouse.<span class="str">"customers$snapshots"</span>
 <span class="kw">ORDER BY</span> committed_at;
 
 <span class="cmt">-- Query data before Alice was added</span>
